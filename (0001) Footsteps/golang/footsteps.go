@@ -1,14 +1,15 @@
-package golang
+package main
 
 import (
 	"bufio"
-	_ "fmt"
+	"flag"
 	"os"
 	"strings"
 )
 
+const DIR_PATH = "footsteps/golang/"
 const RIGHT_FEET_OFFSET = 2
-const FEET_SAMPLE_FILEPATH = "sample.txt"
+const FEET_SAMPLE_FILEPATH = DIR_PATH + "sample.txt"
 
 var MIRRORING_MAP = map[string]string{
 	"(":  ")",
@@ -39,7 +40,7 @@ func readLines(path string) ([]string, error) {
 }
 
 func writeLines(lines []string, path string) error {
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.Create(path)
 	if err != nil {
 		return err
 	}
@@ -53,6 +54,14 @@ func writeLines(lines []string, path string) error {
 
 func iterateSample(index *int, feetLength int) {
 	*index = (*index + 1) % feetLength
+}
+
+func mirrorRow(s string) string {
+	r := []rune(s)
+	for i := 0; i <= len(r) / 2; i++ {
+		r[len(r) - 1 - i], r[i] = r[i], r[len(r) - 1 - i]
+	}
+	return string(r)
 }
 
 func mirrorFeetSample(sample []string) []string {
@@ -69,28 +78,35 @@ func mirrorFeetSample(sample []string) []string {
 		var builder strings.Builder
 		builder.Grow(longestRow)
 
-		for j := 0; j < longestRow; j++ {
-			symbol := sample[i][j:j]
+		for j := 0; j < len(sample[i]); j++ {
+			symbol := string(sample[i][j])
 			mirroredSymbol := MIRRORING_MAP[symbol]
 			if mirroredSymbol != "" {
 				symbol = mirroredSymbol
 			}
 			builder.WriteString(symbol)
 		}
-		mirroredSample[i] = builder.String()
+		mirroredSample[i] = mirrorRow(builder.String())
 	}
 
 	return mirroredSample
 }
 
-func getRow(index int, leftFeet []string, rightFeet []string) string {
+func getRow(step int, stepCnt int, index int, leftFeet []string, rightFeet []string) string {
 	var builder strings.Builder
 	builder.Grow(len(leftFeet) + len(rightFeet))
 
-	builder.WriteString(leftFeet[index])
+	var leftPart string
+	if step != 0 && step != stepCnt {
+		leftIndex := (index + RIGHT_FEET_OFFSET) % len(leftFeet)
+		leftPart = leftFeet[leftIndex]
+	} else {
+		leftPart = strings.Repeat(" ", len(leftFeet) + 1)
+	}
 
-	rightIndex := (index + RIGHT_FEET_OFFSET) % len(leftFeet)
-	builder.WriteString(rightFeet[rightIndex])
+	builder.WriteString(leftPart)
+	builder.WriteString(rightFeet[index])
+
 	return builder.String()
 }
 
@@ -101,14 +117,23 @@ func printFootsteps(filepath string, personCnt int, stepCnt int) {
 	rightFeet := mirrorFeetSample(leftFeet)
 
 	var lines []string
-	for step := 0; step < stepCnt; {
 
-		for person := 0; person < personCnt; {
-			row := getRow(rowIndex, leftFeet, rightFeet)
-			lines = append(lines, row)
+	for step := 0; step <= stepCnt; {
+		var builder strings.Builder
+		builder.Grow(personCnt * (len(leftFeet) + len(rightFeet)))
+
+		for person := 0; person < personCnt; person++ {
+			row := getRow(step, stepCnt, rowIndex, leftFeet, rightFeet)
+			builder.WriteString(row)
 		}
+		lines = append(lines, builder.String())
+
 		iterateSample(&rowIndex, len(leftFeet))
+		if rowIndex == RIGHT_FEET_OFFSET || rowIndex == 0 {
+			step += 1
+		}
 	}
+
 
 	err := writeLines(lines, filepath)
 	if err != nil {
@@ -117,5 +142,10 @@ func printFootsteps(filepath string, personCnt int, stepCnt int) {
 }
 
 func main() {
-	printFootsteps("foot.txt", 3, 5)
+	path := flag.String("path", DIR_PATH + "feet.txt", "Путь до результирующего файла")
+	personCnt := flag.Int("p", 3, "Количество человек")
+	stepCnt := flag.Int("s", 5, "Количество шагов")
+
+	flag.Parse()
+	printFootsteps(*path, *personCnt, *stepCnt)
 }
