@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const DIR_PATH = "footsteps/golang/"
+const DIR_PATH = "(0001) Footsteps/golang/"
 const RIGHT_FEET_OFFSET = 2
 const FEET_SAMPLE_FILEPATH = DIR_PATH + "sample.txt"
 
@@ -143,8 +143,8 @@ func printFootsteps(filepath string, personCnt int, stepCnt int) {
 
 func main() {
 	path := flag.String("path", DIR_PATH + "feet.txt", "Путь до результирующего файла")
-	personCnt := flag.Int("p", 3, "Количество человек")
-	stepCnt := flag.Int("s", 5, "Количество шагов")
+	personCnt := flag.Int("p", 6, "Количество человек")
+	stepCnt := flag.Int("s", 9, "Количество шагов")
 
 	flag.Parse()
 	printFootsteps(*path, *personCnt, *stepCnt)
